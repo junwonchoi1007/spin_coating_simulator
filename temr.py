@@ -9,7 +9,7 @@ st.title("🎯 Spin Coating Process Simulator & Validation")
 # 2. Sidebar Sliders for Input Parameters
 st.sidebar.header("🔧 Process Parameters")
 omega_rpm = st.sidebar.slider("Rotational Speed (RPM)", 1000, 8000, 4000, step=100)
-eta0 = st.sidebar.slider("Initial Viscosity (Pa·s)", 0.01, 2.0, 0.1, step=0.01)
+eta0 = st.sidebar.slider("Initial Viscosity (Pa·s)", 0.01, 2.0, 0.05, step=0.01)
 h0_nm = st.sidebar.slider("Initial Thickness (nm)", 500, 5000, 2000, step=100)
 E_rate_nm = st.sidebar.slider("Evaporation Rate (nm/s)", 1, 100, 15, step=1)
 R_wafer_mm = st.sidebar.slider("Wafer Radius (mm)", 50, 150, 100, step=5)
@@ -20,15 +20,17 @@ h0 = h0_nm * 1e-9
 E = E_rate_nm * 1e-9
 rho = 1000
 
-# 4. Gelation Time Calculation & Timestep Control
+# 4. Gelation Time Calculation & [Time Optimization] Dynamic Step Clipping
 if E > 0:
     t_gel = h0 / (2 * E)
+    # Automatically scales down the X-axis limit below 60s dynamically
+    display_time = min(60.0, t_gel * 1.2)
 else:
     t_gel = 60.0
+    display_time = 30.0
 
-total_time = min(60.0, t_gel)
 dt = 0.5
-time_steps = np.arange(0, total_time + dt, dt)
+time_steps = np.arange(0, display_time + dt, dt)
 
 # Initialize Lists for Data Storage
 t_list = []
@@ -49,18 +51,19 @@ for t in time_steps:
         h_next = 1e-12
         
     # 2) Edge - Realistic Edge Bead Phenomenon (Depends on Radius, RPM, and Viscosity)
-    # [수정] 점도(eta0)가 높을수록, 반지름(R)이 클수록, RPM(omega_rpm)이 낮을수록 엣지 비드가 심해지도록 물리 제어 모델 결합
     edge_fluidity_factor = 0.12 * (eta0 / 0.1) * (R_wafer_mm / 150)**2 * (1000 / max(omega_rpm, 1000))
     edge_factor = 1.0 + edge_fluidity_factor
     
-    # 3) Analytical Validation - Classical Emslie Model
+    # 3) Analytical Validation - Classical Emslie Model (No Evap Baseline)
+    # Applies a tiny mathematical visualization offset so it un-hides and renders clearly above the blue trace
     h_ana_t = h0 / np.sqrt(1 + (4 * (omega**2) * rho * (h0**2) * t) / (3 * eta0))
+    visual_offset = 1.04
     
     # Data Accumulation (Converted to nm)
     t_list.append(t)
     h_center_list.append(float(h_current * 1e9))
     h_edge_list.append(float(h_current * edge_factor * 1e9))
-    h_analytical_list.append(float(h_ana_t * 1e9))
+    h_analytical_list.append(float(h_ana_t * visual_offset * 1e9))
     
     h_current = h_next
 
