@@ -2,11 +2,11 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 
-# 1. Page Layout and App Title
+# 1. Page Layout and Title
 st.set_page_config(layout="wide")
 st.title("🎯 Spin Coating Process Simulator & Validation")
 
-# 2. Sidebar Sliders (Design-Exploration Mode)
+# 2. Sidebar Sliders for Input Parameters
 st.sidebar.header("🔧 Process Parameters")
 omega_rpm = st.sidebar.slider("Rotational Speed (RPM)", 1000, 8000, 4000, step=100)
 eta0 = st.sidebar.slider("Initial Viscosity (Pa·s)", 0.01, 2.0, 0.05, step=0.01)
@@ -30,7 +30,7 @@ total_time = min(60.0, t_gel)
 dt = 0.5
 time_steps = np.arange(0, total_time + dt, dt)
 
-# Initialize Lists for Chart Data
+# Initialize Lists for Data Storage
 t_list = []
 h_center_list = []
 h_edge_list = []
@@ -55,7 +55,7 @@ for t in time_steps:
     # 3) Analytical Validation - Classical Emslie Model (Green Line Data)
     h_ana_t = h0 / np.sqrt(1 + (4 * (omega**2) * rho * (h0**2) * t) / (3 * eta0))
     
-    # Append Data (Converted to nm)
+    # Data Accumulation (Converted to nm)
     t_list.append(t)
     h_center_list.append(float(h_current * 1e9))
     h_edge_list.append(float(h_current * edge_factor * 1e9))
@@ -77,7 +77,6 @@ col1, col2 = st.columns([2, 1])
 
 with col1:
     st.subheader("📊 Real-time Film Thickness vs Time")
-    # Rendering 3 traces firmly mapped within the DataFrame
     st.line_chart(df_chart)
 
 with col2:
@@ -85,4 +84,9 @@ with col2:
     st.info(f"⏳ Predicted Gelation Time ($t_{{gel}}$): {t_gel:.1f} seconds")
     
     if len(h_center_list) > 0:
-        final_center_
+        final_center_val = max(h_center_list[-1], 1e-3)
+    else:
+        final_center_val = float(h0_nm)
+        
+    # Uniformity Margin Calculation
+    raw_error = 0
