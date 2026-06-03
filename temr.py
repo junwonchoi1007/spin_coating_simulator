@@ -49,9 +49,10 @@ for t in time_steps:
     if h_next < 1e-12:
         h_next = 1e-12
         
-    # 2) Edge - 공정 조건에 따른 엣지 비드 스케일링 제어
-    dynamic_suppression = 0.005 * (R_wafer_mm / 150)**2 * (4000 / max(omega_rpm, 1000))
-    edge_factor = 1.0 + min(dynamic_suppression, 0.012)
+    # 2) Edge - 반지름 변화가 시각적으로 잘 보이도록 가중치 모델 수정
+    # 반지름(R)이 커질수록 엣지 비드 효과가 커져 분홍색 선이 위로 확실히 올라갑니다.
+    dynamic_suppression = 0.018 * (R_wafer_mm / 100)**2 * (4000 / max(omega_rpm, 1000))
+    edge_factor = 1.0 + dynamic_suppression
     
     # 3) Analytical Validation - 고전 Emslie 이론해
     h_ana_t = h0 / np.sqrt(1 + (4 * (omega**2) * rho * (h0**2) * t) / (3 * eta0))
@@ -73,19 +74,15 @@ with col1:
 
 with col2:
     st.subheader("💡 Fab Engineer 공정 가이드라인")
-    
-    # 가이드라인 출력 영역 구조 완전 고정
     st.info(f"⏳ 예측된 겔화 시간 (Gelation Time): {t_gel:.1f} 초")
     
-    # 빈 데이터 오류 방지를 위한 안전 예외 필터링
     if len(chart_data["Center (Numerical Euler)"]) > 0:
         final_center_val = max(chart_data["Center (Numerical Euler)"][-1], 1e-3)
     else:
         final_center_val = float(h0_nm)
         
-    # 가상 균일도 마진 매칭
-    raw_error = 0.005 * (R_wafer_mm / 150)**2 * (4000 / max(omega_rpm, 1000)) * 100
-    uniformity_err = min(raw_error, 1.45)
+    # 실시간 균일도 오차 계산 및 합격 판정 연동
+    uniformity_err = 0.018 * (R_wafer_mm / 100)**2 * (4000 / max(omega_rpm, 1000)) * 100
     final_edge_val = final_center_val * (1 + uniformity_err / 100)
     
     st.write("---")
@@ -96,4 +93,4 @@ with col2:
     if uniformity_err < 2.0:
         st.success(f"🎯 **Target Met!** 균일도 오차가 ±{uniformity_err:.2f}% 내에 도달했습니다.")
     else:
-        st.error(f"❌ **Target Failed!** 반경 균일도 오차가 스펙을 초과했습니다.")
+        st.error(f"❌ **Target Failed!** 반경 균일도 오차가 ±{uniformity_err:.2f}%로 스펙을 초과했습니다. 회전 속도(RPM)를 높이거나 반지름을 조절하세요.")
