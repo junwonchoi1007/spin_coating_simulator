@@ -86,3 +86,20 @@ with col2:
     if len(h_center_list) > 0:
         final_center_val = max(h_center_list[-1], 1e-3)
         final_edge_val = max(h_edge_list[-1], 1e-3)
+    else:
+        final_center_val = float(h0_nm)
+        final_edge_val = float(h0_nm)
+        
+    # Real-time Uniformity Error Calculation
+    uniformity_err = (abs(final_center_val - final_edge_val) / final_center_val) * 100
+    
+    st.write("---")
+    st.markdown("### 🎯 Final Profile & Radial Uniformity")
+    st.write(f"- Center Final Thickness: **{final_center_val:.1f} nm**")
+    st.write(f"- Edge Final Thickness: **{final_edge_val:.1f} nm**")
+    
+    # Dynamic Success/Failure Evaluation (±2.0% Specification Boundary)
+    if uniformity_err <= 2.0:
+        st.success(f"🎯 **Target Met!** Radial uniformity error is controlled within ±{uniformity_err:.2f}% (Target: ±2.0% satisfied).")
+    else:
+        st.error(f"❌ **Target Failed!** Radial uniformity error is ±{uniformity_err:.2f}%, which exceeds the required specification (Target: ±2.0%). Please adjust process parameters.")
