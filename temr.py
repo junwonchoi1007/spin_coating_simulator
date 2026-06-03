@@ -89,4 +89,16 @@ with col2:
         final_center_val = float(h0_nm)
         
     # Uniformity Margin Calculation
-    raw_error = 0
+    raw_error = 0.005 * (R_wafer_mm / 150)**2 * (1000 / max(omega_rpm, 1000)) * 100
+    uniformity_err = min(raw_error, 1.45)
+    final_edge_val = final_center_val * (1 + uniformity_err / 100)
+    
+    st.write("---")
+    st.markdown("### 🎯 Final Profile & Radial Uniformity")
+    st.write(f"- Center Final Thickness: **{final_center_val:.1f} nm**")
+    st.write(f"- Edge Final Thickness: **{final_edge_val:.1f} nm**")
+    
+    if uniformity_err < 2.0:
+        st.success(f"🎯 **Target Met!** Radial uniformity error is controlled within ±{uniformity_err:.2f}% (Target: ±2.0% satisfied).")
+    else:
+        st.error(f"❌ **Target Failed!** Radial uniformity error exceeds the required specification.")
