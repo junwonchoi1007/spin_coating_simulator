@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 
-# 1. 페이지 레이아웃 및 제목 설정
+# 1. 페이지 레이아웃 및 웹 타이틀 설정
 st.set_page_config(layout="wide")
 st.title("🎯 Spin Coating Process Simulator & Validation")
 
@@ -14,13 +14,13 @@ h0_nm = st.sidebar.slider("초기 박막 두께 Thickness (nm)", 500, 5000, 2000
 E_rate_nm = st.sidebar.slider("용매 증발 속도 Evaporation Rate (nm/s)", 1, 100, 20, step=1)
 R_wafer_mm = st.sidebar.slider("웨이퍼 반지름 Wafer Radius (mm)", 50, 150, 100, step=5)
 
-# 3. 물리 단위 변환
+# 3. 수치해석을 위한 표준 단위 변환 (m, rad/s)
 omega = (omega_rpm * 2 * np.pi) / 60
 h0 = h0_nm * 1e-9
 E = E_rate_nm * 1e-9
 rho = 1000
 
-# 4. t_gel 연산 및 시간 영역 설정
+# 4. t_gel (겔화 시간) 계산 및 타임스텝 설정
 if E > 0:
     t_gel = h0 / (2 * E)
 else:
@@ -34,10 +34,10 @@ h_center = []
 h_edge = []
 h_analytical = []
 
-# 5. 수치해석 루프 실행
+# 5. 시간 전진 루프 (수치해석 업데이트 및 검증 수식 연산)
 h_current = h0
 for t in time_steps:
-    # 1) Center - 수치해석 오일러법
+    # 1) Center - 오일러법 수치해석
     eta_t = eta0 * np.exp(t / t_gel)
     K = (2 * (omega**2) * rho) / (3 * eta_t)
     
@@ -48,17 +48,17 @@ for t in time_steps:
     
     h_center.append(h_current * 1e9)
     
-    # 2) Edge - Edge Bead 효과 모사
+    # 2) Edge - 반경 방향 불균일도 및 엣지 비드 효과 적용
     edge_factor = 1.0 + (0.2 * (R_wafer_mm / 150)**2)
     h_edge.append(h_current * edge_factor * 1e9)
     
-    # 3) Validation - 고전 유체역학 이론적 해석해 (Emslie Model)
+    # 3) Validation - 용매 증발이 없는 고전 유체역학 해석해 (Emslie Model)
     h_ana_t = h0 / np.sqrt(1 + (4 * (omega**2) * rho * (h0**2) * t) / (3 * eta0))
     h_analytical.append(h_ana_t * 1e9)
     
     h_current = h_next
 
-# 6. 화면 분할 출력
+# 6. 메인 대시보드 레이아웃 분할 출력
 col1, col2 = st.columns([2, 1])
 
 with col1:
@@ -92,6 +92,6 @@ with col2:
     st.write(f"- 가장자리 최종 두께: {final_edge_val:.1f} nm")
     
     if uniformity_err <= 2.0:
-        st.success(f"🎯 Target Met! 균일도 에러 오차 범위가 ±{uniformity_err:.2f}% 내에 도달했습니다.")
+        st.success(f"🎯 Target Met! 균일도 오차가 ±{uniformity_err:.2f}% 내에 도달했습니다.")
     else:
         st.error(f"❌ Target Failed! 반경 균일도 오차가 ±{uniformity_err:.2f}%로 스펙을 초과했습니다. 공정 변수를 재조정하십시오.")
