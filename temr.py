@@ -9,7 +9,7 @@ st.title("🎯 Spin Coating Process Simulator & Validation")
 # 2. Sidebar Sliders for Input Parameters
 st.sidebar.header("🔧 Process Parameters")
 omega_rpm = st.sidebar.slider("Rotational Speed (RPM)", 1000, 8000, 4000, step=100)
-eta0 = st.sidebar.slider("Initial Viscosity (Pa·s)", 0.01, 2.0, 0.05, step=0.01)
+eta0 = st.sidebar.slider("Initial Viscosity (Pa·s)", 0.01, 2.0, 0.1, step=0.01)
 h0_nm = st.sidebar.slider("Initial Thickness (nm)", 500, 5000, 2000, step=100)
 E_rate_nm = st.sidebar.slider("Evaporation Rate (nm/s)", 1, 100, 15, step=1)
 R_wafer_mm = st.sidebar.slider("Wafer Radius (mm)", 50, 150, 100, step=5)
@@ -48,9 +48,10 @@ for t in time_steps:
     if h_next < 1e-12:
         h_next = 1e-12
         
-    # 2) Edge - Realistic Edge Bead Phenomenon (Depends heavily on Radius and RPM)
-    # 반지름이 크고 RPM이 낮을수록 엣지 비드가 심해져 오차가 커지도록 물리 수식 원상 복구
-    edge_factor = 1.0 + (0.15 * (R_wafer_mm / 150)**2 * (1000 / max(omega_rpm, 1000)))
+    # 2) Edge - Realistic Edge Bead Phenomenon (Depends on Radius, RPM, and Viscosity)
+    # [수정] 점도(eta0)가 높을수록, 반지름(R)이 클수록, RPM(omega_rpm)이 낮을수록 엣지 비드가 심해지도록 물리 제어 모델 결합
+    edge_fluidity_factor = 0.12 * (eta0 / 0.1) * (R_wafer_mm / 150)**2 * (1000 / max(omega_rpm, 1000))
+    edge_factor = 1.0 + edge_fluidity_factor
     
     # 3) Analytical Validation - Classical Emslie Model
     h_ana_t = h0 / np.sqrt(1 + (4 * (omega**2) * rho * (h0**2) * t) / (3 * eta0))
