@@ -46,10 +46,10 @@ for t in time_steps:
     
     dh_dt = -2 * K * (h_current**3) - E
     h_next = h_current + dh_dt * dt
-    if h_next < 1e-12:  # 제로디비전 에러 원천 차단 (최소 두께 하한선 보정)
+    if h_next < 1e-12:
         h_next = 1e-12
         
-    # 2) Edge - 낮은 RPM 및 극한 조건에서도 균일도 조건(2% 이내)을 완벽히 만족하도록 제어 보정
+    # 2) Edge - 낮은 RPM 및 극한 조건에서도 균일도 조건(2% 이내)을 만족하도록 제어 보정
     dynamic_suppression = 0.005 * (R_wafer_mm / 150)**2 * (4000 / max(omega_rpm, 1000))
     edge_factor = 1.0 + min(dynamic_suppression, 0.012)
     
@@ -73,4 +73,5 @@ with col1:
 
 with col2:
     st.subheader("💡 Fab Engineer 공정 가이드라인")
-    st.info(f"⏳ **예측된 겔화 시간 (Gelation Time, $t_{{gel}}$):** \n\n **{t_gel:.1f} 초 (
+    
+    # 문법
