@@ -48,11 +48,11 @@ for t in time_steps:
     if h_next < 1e-12:
         h_next = 1e-12
         
-    # 2) Edge - Edge Bead Adaptive Matching Algorithm
-    raw_suppression = 0.015 * (R_wafer_mm / 150)**2 * (1000 / max(omega_rpm, 1000))
-    edge_factor = 1.0 + min(raw_suppression, 0.0145)
+    # 2) Edge - Realistic Edge Bead Phenomenon (Depends heavily on Radius and RPM)
+    # 반지름이 크고 RPM이 낮을수록 엣지 비드가 심해져 오차가 커지도록 물리 수식 원상 복구
+    edge_factor = 1.0 + (0.15 * (R_wafer_mm / 150)**2 * (1000 / max(omega_rpm, 1000)))
     
-    # 3) Analytical Validation - Classical Emslie Model (Green Line Data)
+    # 3) Analytical Validation - Classical Emslie Model
     h_ana_t = h0 / np.sqrt(1 + (4 * (omega**2) * rho * (h0**2) * t) / (3 * eta0))
     
     # Data Accumulation (Converted to nm)
@@ -85,20 +85,4 @@ with col2:
     
     if len(h_center_list) > 0:
         final_center_val = max(h_center_list[-1], 1e-3)
-    else:
-        final_center_val = float(h0_nm)
-        
-    # Uniformity Margin Calculation
-    raw_error = 0.005 * (R_wafer_mm / 150)**2 * (1000 / max(omega_rpm, 1000)) * 100
-    uniformity_err = min(raw_error, 1.45)
-    final_edge_val = final_center_val * (1 + uniformity_err / 100)
-    
-    st.write("---")
-    st.markdown("### 🎯 Final Profile & Radial Uniformity")
-    st.write(f"- Center Final Thickness: **{final_center_val:.1f} nm**")
-    st.write(f"- Edge Final Thickness: **{final_edge_val:.1f} nm**")
-    
-    if uniformity_err < 2.0:
-        st.success(f"🎯 **Target Met!** Radial uniformity error is controlled within ±{uniformity_err:.2f}% (Target: ±2.0% satisfied).")
-    else:
-        st.error(f"❌ **Target Failed!** Radial uniformity error exceeds the required specification.")
+        final_edge_val = max(h_edge_list[-1], 1e-3)
